@@ -20,11 +20,22 @@ func main() {
 	root.Execute()
 }
 
+var llevel int
+
+func logf(lvl int, fmt string, args ...interface{}) {
+	if llevel >= lvl {
+		log.Printf(fmt, args...)
+	}
+}
+
 var (
 	root = &cobra.Command{
 		Use:   "arpy",
 		Short: "rpa pack and unpack tool",
 		Long:  "rpa pack and unpack tool",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			llevel, _ = cmd.Flags().GetInt("verbose") 
+		},
 	}
 
 	pack = &cobra.Command{
@@ -50,10 +61,9 @@ var (
 			key, _ := cmd.Flags().GetString("key")
 			rpa := arpy.New(s2i64(key))
 
-			log.Printf("building %s: key=%x, glob=%s", out, key, glob)
-
+			logf(1, "building %s: key=%x, glob=%s", out, key, glob)
 			for i := range args {
-				log.Printf("walking %s", args[i])
+				logf(2, "walking %s", args[i])
 
 				err := filepath.Walk(args[i], func(path string, info fs.FileInfo, err error) error {
 					if err != nil {
@@ -79,7 +89,7 @@ var (
 						return err
 					}
 
-					log.Printf("include: %s", path)
+					logf(2, "include: %s", path)
 					rpa.AddFile(path, data)
 
 					return nil
@@ -90,16 +100,18 @@ var (
 				}
 			}
 
-			log.Printf("writing...")
+			logf(1, "packed %d files", len(rpa.Indexes))
+
 			outfp, err := os.OpenFile(out, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 			if err != nil {
 				return fmt.Errorf("could not write to %s: %s", out, err)
 			}
 
+			logf(1, "writing %s", out)
 			rpa.WriteTo(outfp)
 			outfp.Sync()
 			outfp.Close()
-			log.Printf("done")
+			logf(1, "done")
 
 			return nil
 		},
@@ -133,7 +145,7 @@ var (
 				idx := rpa.Indexes[i]
 				dst := filepath.Join(out, idx.Name)
 
-				log.Printf("%s -> %s", idx.Name, dst)
+				logf(1, "%s -> %s", idx.Name, dst)
 				dfp, err := os.OpenFile(dst, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 				if err != nil {
 					return fmt.Errorf("could not write %s to %s", idx.Name, dst)
@@ -167,10 +179,11 @@ func s2i64(s string) int64 {
 
 func init() {
 	root.PersistentFlags().StringP("key", "k", "deadbeef", "key for packing or unpacking - expect hex -> int")
+	root.PersistentFlags().IntP("verbose", "v", 0, "verbose output: 0, 1, 2 are accepted")
 
 	root.AddCommand(pack)
 	pack.PersistentFlags().StringP("out", "o", "", "RPA to create")
-	pack.PersistentFlags().StringP("glob", "g", "*", "glob pattern to include in archive")
+	pack.PersistentFlags().StringP("glob", "g", "*", "regexp pattern to include in archive")
 
 	root.AddCommand(unpack)
 	unpack.PersistentFlags().StringP("out", "o", "/tmp", "directory to write files to, defaults to /tmp")
