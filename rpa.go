@@ -205,7 +205,21 @@ func Decode(r *os.File) (*RPA, error) {
 		// pickle.Tuple is an []interface{} in a fancy hat
 		val := (v.([]interface{})[0]).(pickle.Tuple)
 
-		ofs, sz := val[0].(*big.Int).Int64(), val[1].(*big.Int).Int64()
+		var ofs, sz int64
+
+		switch nv := val[0].(type) {
+		case *big.Int:
+			ofs = nv.Int64()
+		case int64:
+			ofs = nv	
+		}
+
+		switch nv := val[1].(type) {
+		case *big.Int:
+			sz = nv.Int64()
+		case int64:
+			sz = nv
+		}
 
 		pak.Indexes = append(pak.Indexes, Index{
 			Name:   k.(string),
