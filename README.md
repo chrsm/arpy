@@ -10,11 +10,9 @@ that Ren'py uses to archive its files.
 
 ### Installation
 
-`go install bits.chrsm.org/arpy/cmd/arpy@latest`
+If you have Go installed: `go install bits.chrsm.org/arpy/cmd/arpy@latest`
 
-... will eventually work when i fix the redir
-
-just clone & build for now
+Otherwise, you can download [a release](https://github.com/chrsm/arpy/releases).
 
 
 ### Usage
