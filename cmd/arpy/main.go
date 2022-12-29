@@ -146,6 +146,9 @@ var (
 				dst := filepath.Join(out, idx.Name)
 
 				logf(1, "%s -> %s", idx.Name, dst)
+
+				os.MkdirAll(filepath.Dir(dst), 0744)
+
 				dfp, err := os.OpenFile(dst, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 				if err != nil {
 					return fmt.Errorf("could not write %s to %s", idx.Name, dst)
